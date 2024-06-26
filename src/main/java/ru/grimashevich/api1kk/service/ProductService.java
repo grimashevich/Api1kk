@@ -5,12 +5,15 @@ import org.springframework.stereotype.Service;
 import ru.grimashevich.api1kk.entity.Product;
 import ru.grimashevich.api1kk.repository.ProductRepository;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+    private Optional<Product> returnProduct = Optional.of(new Product(1L, 2));
+
+    ConcurrentHashMap<Long, Optional<Product>> productCache = new ConcurrentHashMap<>(100000);
 
     private final ProductRepository productRepository;
 
@@ -27,6 +30,14 @@ public class ProductService {
     }
 
     public Optional<Product> findById(Long id) {
-        return productRepository.findById(id);
+        if (Objects.isNull(id)) {
+            return Optional.empty();
+        }
+        Optional<Product> product = productCache.get(id);
+        if (Objects.isNull(product)) {
+            product = productRepository.findById(id);
+            productCache.put(id, product);
+        }
+        return product;
     }
 }
